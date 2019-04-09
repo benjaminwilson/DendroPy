@@ -18,6 +18,7 @@
 ##############################################################################
 
 import unittest
+import numpy as np
 import dendropy
 import csv
 from dendropy.utility import container
@@ -514,6 +515,33 @@ class PhylogeneticEcologyStatsTests(unittest.TestCase):
                     obs_result.p,
                     expected_results_data_table[expected_result_row_name, "mntd.obs.p"],
                     ))
+
+
+class NumpyArrayTest(unittest.TestCase):
+
+    def test_from_numpy_array(self):
+        tree = dendropy.Tree.get_from_string("(((a:1.1, b:1):1, c:2):1, (d:2, (e:1,f:1):1):1):0;", schema="newick")
+        # construct a NumPy array of distances
+        _pdm = tree.phylogenetic_distance_matrix()
+        # now try to get it back
+        pdm = dendropy.PhylogeneticDistanceMatrix.from_numpy_array(
+            _pdm.to_numpy_array(),
+            _pdm.get_taxon_labels(),
+            _pdm.taxon_namespace)
+        # check a distance
+        namespace = tree.taxon_namespace
+        self.assertTrue(pdm.distance(namespace.get_taxon('a'), namespace.get_taxon('c')), 4.1)
+
+
+class PhylipTest(unittest.TestCase):
+
+    def test_to_phylip(self):
+        tree = dendropy.Tree.get_from_string("(((a:1.1, b:1):1, c:2):1, (d:2, (e:1,f:1):1):1):0;", schema="newick")
+        _out = tree.phylogenetic_distance_matrix().to_phylip()
+        lines = _out.split('\n')
+        # some pretty weak checks, but better than nothing!
+        self.assertEqual(len(lines), 7)
+        self.assertEqual(lines[0], '6')
 
 class PhylogeneticDistanceMatrixReader(unittest.TestCase):
 

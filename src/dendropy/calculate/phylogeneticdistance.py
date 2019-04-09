@@ -24,6 +24,10 @@ Taxon-to-taxon phylogenetic distances.
 import math
 import collections
 import csv
+import numpy as np
+from io import StringIO
+import pandas as pd
+
 from dendropy.calculate import statistics
 from dendropy.utility import GLOBAL_RNG
 from dendropy.utility import container
@@ -79,6 +83,24 @@ class PhylogeneticDistanceMatrix(object):
         pdm = cls(*args, **kwargs)
         pdm.compile_from_tree(tree=tree)
         return pdm
+
+    @classmethod
+    def from_numpy_array(cls,
+                         dists,
+                         labels,
+                         taxon_namespace):
+        """
+        Parameters
+        ----------
+        dists : a 2d NumPy array of interleaf distances.
+        labels: their labels.
+        """
+        assert dists.shape == (len(labels), len(labels))
+        df = pd.DataFrame(dists, index=labels, columns=labels)
+        _out = StringIO()
+        df.to_csv(_out)
+        _out.seek(0)
+        return cls.from_csv(_out, taxon_namespace=taxon_namespace)
 
     @classmethod
     def from_csv(cls,
@@ -393,6 +415,41 @@ class PhylogeneticDistanceMatrix(object):
                 for t2 in src[t1]:
                     dest[t1][t2] = src[t1][t2]
         return o
+
+    def to_numpy_array(self):
+        """
+        Return a 2d numpy array containing the patristic_distance of each pair
+        of leaves.  The order of the leaves is that given by
+        self.get_taxon_labels().
+        """
+        leaves = [taxon for taxon in self.taxon_namespace if taxon in self._mapped_taxa]
+        dists = np.zeros((len(leaves), len(leaves)), dtype=np.float64)
+        for i0, l0 in enumerate(leaves):
+            for i1, l1 in enumerate(leaves):
+                dists[i0, i1] = self.patristic_distance(l0, l1)
+        return dists
+
+    def get_taxon_labels(self):
+        """
+        Return a list of the leaf labels, where the order is that defined by
+        the TaxonNamespace.
+        """
+        leaves = [taxon for taxon in self.taxon_namespace if taxon in self._mapped_taxa]
+        return [leaf.label for leaf in leaves]
+
+    def to_phylip(self):
+        """
+        Return a string representing a Phylip compatible encoding of this
+        distance matrix.
+        """
+        taxon_labels = self.get_taxon_labels()
+        dists = self.to_numpy_array()
+        _out = '%i' % len(taxon_labels)
+        lines = [_out]
+        for label, dists_row in zip(taxon_labels, dists):
+            dists_row_str = ' '.join([str(val) for val in dists_row])
+            lines.append('%s\t%s' % (label, dists_row_str))
+        return '\n'.join(lines)
 
     def mrca(self, taxon1, taxon2):
         """

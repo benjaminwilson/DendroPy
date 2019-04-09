@@ -756,6 +756,15 @@ class Edge(
         self._bipartition = None
         self.comments = []
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        if self.length is not None:
+            return 'Edge length: %.4f' % self.length
+        else:
+            return 'Edge length: None'
+
     def __copy__(self, memo=None):
         raise TypeError("Cannot directly copy Edge")
 
@@ -3728,6 +3737,9 @@ class Tree(
         """
         return [leaf for leaf in self.leaf_node_iter()]
 
+    def leaf_labels(self):
+        return [leaf.taxon.label for leaf in self.leaf_nodes()]
+
     def internal_nodes(self, exclude_seed_node=False):
         """
         Returns list of internal nodes in the tree.
@@ -6099,7 +6111,7 @@ class Tree(
         return "%s" % self._as_newick_string()
 
     def __repr__(self):
-        return "<{} object at {}>".format(self.__class__.__name__, hex(id(self)))
+        return "<{} object at {}> {}".format(self.__class__.__name__, hex(id(self)), self._as_newick_string())
 
     def description(self, depth=1, indent=0, itemize="", output=None):
         """
@@ -6247,7 +6259,7 @@ class Tree(
             dot_nd = "n%d" % n
             out.write(' %s  [label="%s"];\n' % (dot_nd, label))
             nd_id_to_dot_nd[nd] = dot_nd
-        for nd, dot_nd in nd_id_to_dot_nd.iteritems():
+        for nd, dot_nd in nd_id_to_dot_nd.items():
             try:
                 e = nd.edge
                 par_dot_nd = nd_id_to_dot_nd[e.tail_node]

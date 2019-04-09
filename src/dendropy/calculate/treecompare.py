@@ -83,6 +83,13 @@ def symmetric_difference(tree1, tree2, is_bipartitions_updated=False):
         print(treecompare.symmetric_difference(tree1, tree2))
 
     """
+    # BW: symmetric difference should only be defined for unrooted trees, so
+    # make a copy and deroot them
+    # c.f. https://github.com/jeetsukumaran/DendroPy/issues/109
+    tree1 = dendropy.Tree(tree1)
+    tree2 = dendropy.Tree(tree2)
+    tree1.deroot()
+    tree2.deroot()
     t = false_positives_and_negatives(
             tree1,
             tree2,
